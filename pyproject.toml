@@ -1,0 +1,30 @@
+[project]
+name = "freight-rate-prediction-challenge"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Wendirad Demelash", email = "wendiradame@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "dvc>=3.67.1",
+    "numpy>=2.5.3",
+    "pandas>=3.0.5",
+    "scikit-learn>=1.9.1",
+]
+
+[project.scripts]
+freight-rate-prediction-challenge = "freight_rate_prediction_challenge:main"
+
+[build-system]
+requires = ["uv_build>=0.12.15,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "marimo>=0.24.2",
+    "mypy>=2.3.1",
+    "pytest>=9.1.1",
+    "ruff>=0.16.8",
+]
