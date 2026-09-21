@@ -163,3 +163,4 @@ cython_debug/
 
 # CSV Data
 data/
+*/__marimo__/

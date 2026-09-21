@@ -9,9 +9,17 @@ authors = [
 requires-python = ">=3.13"
 dependencies = [
     "dvc>=3.67.1",
+    "geopandas>=1.1.4",
     "numpy>=2.5.3",
+    "openlayers>=0.1.6",
     "pandas>=3.0.5",
+    "pyarrow>=13.0",
     "scikit-learn>=1.9.1",
+    "seaborn>=0.13.2",
+    "shapely>=2.1.2",
+    "statsmodels>=0.15.0",
+    "vegafusion>=2.0.3",
+    "vl-convert-python>=1.9.0",
 ]
 
 [project.scripts]
