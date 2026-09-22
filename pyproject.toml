@@ -22,12 +22,12 @@ dependencies = [
     "vl-convert-python>=1.9.0",
 ]
 
-[project.scripts]
-freight-rate-prediction-challenge = "freight_rate_prediction_challenge:main"
-
 [build-system]
 requires = ["uv_build>=0.12.15,<0.13.0"]
 build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = ["data", "experiments", "features", "models", "utils"]
 
 [dependency-groups]
 dev = [
