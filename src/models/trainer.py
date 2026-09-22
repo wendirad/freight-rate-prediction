@@ -24,6 +24,9 @@ class FeatureConfig:
     weight_col: str | None = None
     group_col: str | None = "equipment"
     categorical_cols: list[str] | None = None
+    target_transform: str = "direct"
+    distance_col: str = "distance"
+    date_col: str = "date"
 
 
 def compute_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float]:
@@ -66,10 +69,65 @@ class Trainer:
         self.model = model
         self.config = config
         self.is_fitted_ = False
+        self.date_origin_: pd.Timestamp | None = None
+        self.date_trend_intercept_: float | None = None
+        self.date_trend_slope_: float | None = None
+
+    def _positive_distance(self, df: pd.DataFrame) -> pd.Series:
+        distance = df[self.config.distance_col]
+        if (distance <= 0).any():
+            raise ValueError("rate_per_km transforms require positive distance values")
+        return distance
+
+    def _date_offsets(self, df: pd.DataFrame) -> np.ndarray:
+        if self.date_origin_ is None:
+            raise RuntimeError("date trend must be fitted before transformation")
+        dates = pd.to_datetime(df[self.config.date_col], errors="raise")
+        return (dates - self.date_origin_).dt.total_seconds().to_numpy() / 86_400
+
+    def _fit_target_transform(self, df: pd.DataFrame) -> None:
+        if self.config.target_transform != "log_rate_per_km_detrended":
+            return
+
+        distance = self._positive_distance(df)
+        rate_per_km = df[self.config.target_col] / distance
+        if (rate_per_km <= 0).any():
+            raise ValueError("log_rate_per_km_detrended requires positive target values")
+
+        dates = pd.to_datetime(df[self.config.date_col], errors="raise")
+        self.date_origin_ = dates.min()
+        day_offsets = self._date_offsets(df)
+        log_rate_per_km = np.log(rate_per_km.to_numpy())
+        if np.ptp(day_offsets) == 0:
+            self.date_trend_slope_ = 0.0
+            self.date_trend_intercept_ = float(log_rate_per_km.mean())
+        else:
+            slope, intercept = np.polyfit(day_offsets, log_rate_per_km, 1)
+            self.date_trend_slope_ = float(slope)
+            self.date_trend_intercept_ = float(intercept)
+
+    def _date_trend(self, df: pd.DataFrame) -> np.ndarray:
+        if self.date_trend_intercept_ is None or self.date_trend_slope_ is None:
+            raise RuntimeError("date trend must be fitted before transformation")
+        return self.date_trend_intercept_ + self.date_trend_slope_ * self._date_offsets(df)
 
     def _select_xy(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
         X = df[self.config.feature_cols]
         y = df[self.config.target_col]
+        if self.config.target_transform == "rate_per_km":
+            distance = self._positive_distance(df)
+            y = y / distance
+        elif self.config.target_transform == "log_rate_per_km_detrended":
+            distance = self._positive_distance(df)
+            y = pd.Series(
+                np.log((y / distance).to_numpy()) - self._date_trend(df),
+                index=y.index,
+                name=y.name,
+            )
+        elif self.config.target_transform != "direct":
+            raise ValueError(
+                f"unknown target transform: {self.config.target_transform}"
+            )
         return X, y
 
     def _select_weights(self, df: pd.DataFrame) -> np.ndarray | None:
@@ -83,6 +141,7 @@ class Trainer:
         eval_df: pd.DataFrame | None = None,
         early_stopping_rounds: int | None = None,
     ) -> Trainer:
+        self._fit_target_transform(df)
         X, y = self._select_xy(df)
         sample_weight = self._select_weights(df)
 
@@ -124,7 +183,15 @@ class Trainer:
         if not self.is_fitted_:
             raise RuntimeError("model must be trained before predict")
         X = df[self.config.feature_cols]
-        return self.model.predict(X)
+        predictions = self.model.predict(X)
+        if self.config.target_transform == "rate_per_km":
+            predictions = predictions * df[self.config.distance_col].to_numpy()
+        elif self.config.target_transform == "log_rate_per_km_detrended":
+            predictions = (
+                np.exp(predictions + self._date_trend(df))
+                * df[self.config.distance_col].to_numpy()
+            )
+        return predictions
 
     def validate(self, df: pd.DataFrame) -> dict[str, Any]:
         predictions = self.predict(df)

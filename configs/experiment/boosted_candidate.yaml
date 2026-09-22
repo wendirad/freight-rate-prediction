@@ -1,0 +1,35 @@
+# @package _global_
+# One combined candidate using target-free domain features from the strongest
+# public approaches. Intended for a single controlled comparison, not ablation.
+
+features:
+  selected:
+    - calendar
+    - equipment
+    - freight_domain
+
+training:
+  feature_cols:
+    - distance
+    - pickup_lat
+    - pickup_lon
+    - delivery_lat
+    - delivery_lon
+    - weight
+    - market_index
+    - quote_signal
+    - month_sin
+    - month_cos
+    - day_of_week
+    - equipment_Dry Van
+    - equipment_Flatbed
+    - equipment_Reefer
+    - log_distance
+    - weight_per_km
+    - pickup_delivery_lat_delta
+    - pickup_delivery_lon_delta
+    - geo_distance_km
+    - route_distance_ratio
+    - market_distance
+    - quote_distance
+    - days_since_training_start

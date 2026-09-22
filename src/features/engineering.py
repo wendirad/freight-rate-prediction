@@ -202,6 +202,56 @@ class QuoteSignalZScore(BaseCleaner):
         return df
 
 
+class FreightDomainFeatures(BaseCleaner):
+    """Adds target-free freight interactions used by strong public solutions."""
+
+    def __init__(self, date_col: str = "date", distance_col: str = "distance") -> None:
+        super().__init__()
+        self.date_col = date_col
+        self.distance_col = distance_col
+        self.date_origin_: pd.Timestamp | None = None
+
+    def fit(self, df: pd.DataFrame) -> FreightDomainFeatures:
+        self.date_origin_ = pd.to_datetime(df[self.date_col], errors="raise").min()
+        self._is_fitted = True
+        return self
+
+    def transform(self, df: pd.DataFrame, is_training: bool = False) -> pd.DataFrame:
+        self._check_fitted()
+        if self.date_origin_ is None:
+            raise RuntimeError("FreightDomainFeatures has no fitted date origin")
+
+        result = df.copy()
+        distance = result[self.distance_col]
+        if (distance <= 0).any():
+            raise ValueError("freight domain features require positive distance values")
+
+        lat_delta = (result["pickup_lat"] - result["delivery_lat"]).abs()
+        lon_delta = (result["pickup_lon"] - result["delivery_lon"]).abs()
+        pickup_lat = np.radians(result["pickup_lat"])
+        delivery_lat = np.radians(result["delivery_lat"])
+        delta_lat = delivery_lat - pickup_lat
+        delta_lon = np.radians(result["delivery_lon"] - result["pickup_lon"])
+        haversine = np.sin(delta_lat / 2) ** 2 + (
+            np.cos(pickup_lat) * np.cos(delivery_lat) * np.sin(delta_lon / 2) ** 2
+        )
+        geo_distance_km = 2 * 6371.0088 * np.arcsin(np.sqrt(np.clip(haversine, 0, 1)))
+
+        result["log_distance"] = np.log1p(distance)
+        result["weight_per_km"] = result["weight"] / distance
+        result["pickup_delivery_lat_delta"] = lat_delta
+        result["pickup_delivery_lon_delta"] = lon_delta
+        result["geo_distance_km"] = geo_distance_km
+        result["route_distance_ratio"] = distance / np.maximum(geo_distance_km, 1.0)
+        result["market_distance"] = result["market_index"] * distance
+        result["quote_distance"] = result["quote_signal"] * distance
+        dates = pd.to_datetime(result[self.date_col], errors="raise")
+        result["days_since_training_start"] = (
+            dates - self.date_origin_
+        ).dt.total_seconds() / 86_400
+        return result
+
+
 class FeatureEngineeringPipeline:
     """Runs a list of feature steps in order."""
 
@@ -239,10 +289,18 @@ FAMILY_STEPS: dict[str, list[type[BaseCleaner]]] = {
     "equipment": [EquipmentEncoder],
     "market_index_ema": [MarketIndexEMA],
     "quote_signal_zscore": [QuoteSignalZScore],
+    "freight_domain": [FreightDomainFeatures],
 }
 
 # Families whose steps depend on the lane column that LaneBuilder produces.
 _REQUIRES_LANE = {"lane", "market_index_ema"}
+_DEFAULT_FAMILIES = [
+    "calendar",
+    "lane",
+    "equipment",
+    "market_index_ema",
+    "quote_signal_zscore",
+]
 
 
 def build_default_feature_pipeline(
@@ -256,7 +314,7 @@ def build_default_feature_pipeline(
     "lane" was not explicitly requested.
     """
     if families is None:
-        families = list(FAMILY_STEPS.keys())
+        families = _DEFAULT_FAMILIES
 
     unknown = [f for f in families if f not in FAMILY_STEPS]
     if unknown:

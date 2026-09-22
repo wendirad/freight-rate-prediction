@@ -143,6 +143,75 @@ def test_trainer_selects_configured_columns_and_forwards_sample_weights() -> Non
     np.testing.assert_array_equal(predictions, [510.0, 880.0])
 
 
+def test_trainer_rate_per_km_target_round_trip() -> None:
+    data = pd.DataFrame(
+        {"distance": [100.0, 200.0], "posted_rate": [500.0, 900.0]}
+    )
+    model = RecordingEstimator(predictions=[5.0, 4.5])
+    trainer = Trainer(
+        model,
+        FeatureConfig(feature_cols=["distance"], target_transform="rate_per_km"),
+    ).train(data)
+
+    np.testing.assert_allclose(model.fit_y, [5.0, 4.5])
+    np.testing.assert_allclose(trainer.predict(data), [500.0, 900.0])
+
+
+def test_trainer_rate_per_km_rejects_non_positive_distance() -> None:
+    data = pd.DataFrame({"distance": [0.0], "posted_rate": [500.0]})
+    trainer = Trainer(
+        RecordingEstimator(),
+        FeatureConfig(feature_cols=["distance"], target_transform="rate_per_km"),
+    )
+
+    with pytest.raises(ValueError, match="positive distance"):
+        trainer.train(data)
+
+
+def test_trainer_log_rate_per_km_detrended_round_trip_uses_training_trend() -> None:
+    train = pd.DataFrame(
+        {
+            "date": pd.to_datetime(["2025-01-01", "2025-01-11", "2025-01-21"]),
+            "distance": [100.0, 100.0, 100.0],
+            "posted_rate": np.exp([2.0, 2.1, 2.2]) * 100,
+        }
+    )
+    validation = pd.DataFrame(
+        {
+            "date": pd.to_datetime(["2025-01-31"]),
+            "distance": [200.0],
+            "posted_rate": [1.0],
+        }
+    )
+    model = RecordingEstimator(predictions=[0.0])
+    trainer = Trainer(
+        model,
+        FeatureConfig(
+            feature_cols=["distance"],
+            target_transform="log_rate_per_km_detrended",
+        ),
+    ).train(train)
+
+    np.testing.assert_allclose(model.fit_y, [0.0, 0.0, 0.0], atol=1e-12)
+    np.testing.assert_allclose(trainer.predict(validation), [np.exp(2.3) * 200])
+
+
+def test_trainer_log_rate_per_km_detrended_rejects_non_positive_target() -> None:
+    data = pd.DataFrame(
+        {"date": ["2025-01-01"], "distance": [100.0], "posted_rate": [0.0]}
+    )
+    trainer = Trainer(
+        RecordingEstimator(),
+        FeatureConfig(
+            feature_cols=["distance"],
+            target_transform="log_rate_per_km_detrended",
+        ),
+    )
+
+    with pytest.raises(ValueError, match="positive target"):
+        trainer.train(data)
+
+
 def test_trainer_passes_cat_features_when_estimator_supports_it() -> None:
     data = pd.DataFrame(
         {

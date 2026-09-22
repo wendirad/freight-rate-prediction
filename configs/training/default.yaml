@@ -17,6 +17,9 @@ feature_cols:
   - equipment_Reefer
 
 target_col: posted_rate
+target_transform: direct
+distance_col: distance
+date_col: date
 
 weight_col: null
 

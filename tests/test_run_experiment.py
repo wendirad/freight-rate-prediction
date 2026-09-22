@@ -19,6 +19,7 @@ from data.cleaning import WeightCleaner
 from data.folds import make_expanding_folds
 from experiments.run_experiment import (
     evaluate_holdout,
+    fit_final_model,
     run_experiment,
     run_loss_diagnostic,
 )
@@ -45,6 +46,17 @@ def test_feature_config_categorical_cols_defaults_to_none() -> None:
     config = run_experiment_mod._feature_config(training_cfg)
 
     assert config.categorical_cols is None
+
+
+def test_build_model_supports_linear_regression() -> None:
+    from sklearn.linear_model import LinearRegression
+
+    model = run_experiment_mod._build_model(
+        {"family": "linear_regression", "params": {"fit_intercept": False}}
+    )
+
+    assert isinstance(model, LinearRegression)
+    assert model.fit_intercept is False
 
 
 def test_diagnostic_model_overrides_maps_catboost_param_names() -> None:
@@ -308,6 +320,31 @@ def test_evaluate_holdout_fits_once_on_dev_pool_and_scores_october_once(
     assert feature_transforms[0][3] is False
 
     assert "mae" in result
+
+
+def test_fit_final_model_includes_october_after_holdout_evaluation(monkeypatch) -> None:
+    raw = _make_raw()
+    monkeypatch.setattr(run_experiment_mod, "_load_raw", lambda config, cache_dir: raw)
+    monkeypatch.setattr(run_experiment_mod, "_build_model", lambda cfg: _FakeModel())
+
+    fit_calls: list[tuple[str, int, int]] = []
+    transform_calls: list[tuple[str, int, int, bool]] = []
+    _spy_on_pipeline_factory(
+        monkeypatch, "_build_cleaning_pipeline", fit_calls, transform_calls, "clean"
+    )
+    _spy_on_pipeline_factory(
+        monkeypatch,
+        "build_default_feature_pipeline",
+        fit_calls,
+        transform_calls,
+        "feature",
+    )
+
+    result = fit_final_model(_config(), cache_dir="unused")
+
+    clean_fits = [call for call in fit_calls if call[0] == "clean"]
+    assert clean_fits[0][2] == len(raw)
+    assert result["n_rows"] == len(raw)
 
 
 class _FakeLGBMLikeModel:

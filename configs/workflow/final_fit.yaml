@@ -1,14 +1,9 @@
-# Default workflow: fits one model on the entire pre-October dev pool
-# (no per-fold CV, no October access, no early stopping — a fixed
-# iteration count), and saves a deployable prediction bundle. W&B logging
-# is enabled only with `tracker=wandb`.
+# Default workflow: evaluates the frozen candidate once on October, then
+# refits it on all labeled data (including October) and saves a deployable
+# prediction bundle. W&B logging is enabled only with `tracker=wandb`.
 #
-# iterations=295 comes from the diagnostic workflow's per-fold
-# best_iteration values [571, 236, 216, 377, 295]: the median (295) and
-# the most recent fold's own best_iteration (295) agree, and 295 is not
-# the maximum (571) — the earliest fold tolerating 571 rounds reflects
-# that fold's small training set, not a number that generalizes to the
-# full, larger dev pool this workflow actually trains on.
+# The 20-fold comparison selected the model's native 500-iteration,
+# depth-6, learning-rate-0.05 configuration (95.12 mean CV MAE).
 name: final_fit
-iterations: 295
+iterations: 500
 eval_metric: MAE

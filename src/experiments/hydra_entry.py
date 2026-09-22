@@ -1,10 +1,10 @@
 """Hydra-driven entry point for run_experiment.
 
 Composes the config via Hydra (configs/config.yaml and its defaults list).
-By default (workflow=final_fit) `uv run train` needs no overrides: it fits
-one CatBoost model on the whole pre-October dev pool with the fixed
-iteration count chosen from an earlier diagnostic run, saves a deployable
-prediction bundle to artifacts/model.joblib. W&B is optional through
+By default (workflow=final_fit) `uv run train` needs no overrides: it evaluates
+the frozen CatBoost candidate once on October, refits it on all labeled rows
+including October, and saves a deployable prediction bundle to
+artifacts/model.joblib. W&B is optional through
 `tracker=wandb`. Diagnostics remain available via `workflow=diagnostic`
 (5-fold CV, early stopping, per-fold curves) — there, W&B tracking is
 opt-in and off by default (pass `tracker=wandb` to enable it; with it off,
@@ -12,8 +12,8 @@ run_loss_diagnostic is called directly and its own curve summary is
 printed instead of anything going to wandb). `workflow=none` falls back
 to a plain run_experiment CV pass, also with opt-in tracking.
 
-No path here ever touches October (evaluate_holdout is never called).
-Only workflow=final_fit saves an artifact; the other two never do.
+Only workflow=final_fit touches October or saves an artifact. The other
+workflows preserve October as an untouched holdout.
 """
 
 from __future__ import annotations
@@ -26,6 +26,7 @@ from omegaconf import DictConfig, OmegaConf
 
 from experiments.run_experiment import (
     diagnostic_model_overrides,
+    evaluate_holdout,
     run_experiment,
     run_loss_diagnostic,
 )
@@ -140,12 +141,16 @@ def _summarize_final_fit(result: dict, family: str, iterations: int, artifact_pa
     """Concise plain-text report for a run_tracked_final_fit result."""
     lines = [
         (
-            f"Fit {family} on {result['n_rows']} rows, "
+            f"October holdout MAE: {result['holdout_metrics']['mae']:.2f}; "
+            f"MAPE: {result['holdout_metrics']['mape']:.2f}"
+        ),
+        (
+            f"Refit {family} on {result['n_rows']} labeled rows including October, "
             f"{result['n_features']} features, fixed iterations={iterations}."
         ),
         (
             f"in-sample MAE: {result['in_sample_metrics'].get('mae'):.2f} "
-            "(fit on all dev rows, not a generalization estimate)"
+            "(fit on all labeled rows, not a generalization estimate)"
         ),
         f"runtime: {result['runtime_seconds']:.1f}s",
     ]
@@ -153,7 +158,6 @@ def _summarize_final_fit(result: dict, family: str, iterations: int, artifact_pa
         curve = result["train_curve"]
         lines.append(f"training curve: {_sparkline(curve)}  [{curve[0]:.1f} -> {curve[-1]:.1f}]")
     lines.append(f"saved model + fitted preprocessing pipelines to {artifact_path}")
-    lines.append("October holdout was not accessed.")
     return "\n".join(lines)
 
 
@@ -169,6 +173,9 @@ def main(cfg: DictConfig) -> dict:
     if workflow_cfg.get("name") == "final_fit":
         family = config["model"]["family"]
         config["model"]["params"].update(diagnostic_model_overrides(family, workflow_cfg))
+
+        # Evaluate exactly once before October becomes part of final training.
+        holdout_metrics = evaluate_holdout(config, cache_dir)
 
         from serving.inference import PredictionBundle
 
@@ -188,6 +195,8 @@ def main(cfg: DictConfig) -> dict:
             start = time.perf_counter()
             result = fit_final_model(config, cache_dir)
             result["runtime_seconds"] = time.perf_counter() - start
+
+        result["holdout_metrics"] = holdout_metrics
 
         bundle = PredictionBundle(
             cleaner=result["cleaner"],

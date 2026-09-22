@@ -9,6 +9,7 @@ from features.engineering import (
     DayOfWeekEncoder,
     EquipmentEncoder,
     FeatureEngineeringPipeline,
+    FreightDomainFeatures,
     LaneBuilder,
     MarketIndexEMA,
     QuoteSignalZScore,
@@ -25,6 +26,7 @@ from features.engineering import (
         EquipmentEncoder(),
         MarketIndexEMA(),
         QuoteSignalZScore(),
+        FreightDomainFeatures(),
     ],
 )
 def test_feature_transformers_require_fit_before_transform(transformer) -> None:
@@ -184,6 +186,34 @@ def test_quote_signal_zscore_uses_training_statistics() -> None:
     assert encoder.mean_ == pytest.approx(2.0)
     assert encoder.std_ == pytest.approx(1.0)
     assert result["quote_signal_zscore"].tolist() == pytest.approx([-2.0, 0.0, 2.0])
+
+
+def test_freight_domain_features_add_interactions_with_fitted_time_origin() -> None:
+    training = pd.DataFrame(
+        {
+            "date": pd.to_datetime(["2025-01-01", "2025-01-11"]),
+            "distance": [100.0, 200.0],
+            "weight": [1000.0, 3000.0],
+            "market_index": [2.0, 3.0],
+            "quote_signal": [0.5, 0.25],
+            "pickup_lat": [0.0, 10.0],
+            "pickup_lon": [0.0, 10.0],
+            "delivery_lat": [1.0, 12.0],
+            "delivery_lon": [1.0, 13.0],
+        }
+    )
+    validation = training.iloc[[1]].copy()
+    validation["date"] = pd.to_datetime(["2025-01-21"])
+
+    transformer = FreightDomainFeatures().fit(training)
+    result = transformer.transform(validation)
+
+    assert result["weight_per_km"].iloc[0] == pytest.approx(15.0)
+    assert result["market_distance"].iloc[0] == pytest.approx(600.0)
+    assert result["quote_distance"].iloc[0] == pytest.approx(50.0)
+    assert result["days_since_training_start"].iloc[0] == pytest.approx(20.0)
+    assert result["geo_distance_km"].iloc[0] > 0
+    assert np.isfinite(result["route_distance_ratio"].iloc[0])
 
 
 def test_default_pipeline_composes_all_features_and_round_trips(

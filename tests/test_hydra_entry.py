@@ -73,7 +73,7 @@ def test_composed_config_matches_manually_assembled_config() -> None:
     manual_config["workflow"] = workflow_final_fit
 
     assert composed_config == manual_config
-    assert composed["n_folds"] == 5
+    assert composed["n_folds"] == 20
     assert composed["cache_dir"] == "data/interim/cache"
     assert composed["tracker"] == "none"
 
@@ -127,7 +127,7 @@ def test_hydra_entry_calls_run_experiment_with_composed_baseline_config() -> Non
     call_args, _call_kwargs = mock_run_experiment.call_args
     config_arg, n_folds_arg, cache_dir_arg = call_args
 
-    assert n_folds_arg == 5
+    assert n_folds_arg == 20
     assert cache_dir_arg == "data/interim/cache"
     assert config_arg["model"]["params"]["max_depth"] == -1
     assert config_arg["features"]["selected"] == []
@@ -197,6 +197,10 @@ def test_hydra_entry_default_final_fit_does_not_touch_wandb() -> None:
             "experiments.run_experiment.fit_final_model",
             return_value=_fake_final_fit_result(),
         ) as mock_fit,
+        patch(
+            "experiments.hydra_entry.evaluate_holdout",
+            return_value={"mae": 100.0, "mape": 5.0},
+        ) as mock_holdout,
         patch("experiments.track_experiment.run_tracked_final_fit") as mock_tracked,
         patch("serving.inference.PredictionBundle") as mock_bundle,
     ):
@@ -205,6 +209,7 @@ def test_hydra_entry_default_final_fit_does_not_touch_wandb() -> None:
         result = main.__wrapped__(cfg)
 
     mock_tracked.assert_not_called()
+    mock_holdout.assert_called_once()
     mock_fit.assert_called_once()
     mock_bundle.return_value.save.assert_called_once_with("artifacts/model.joblib")
     assert result["n_rows"] == 43147
@@ -219,6 +224,10 @@ def test_hydra_entry_tracker_wandb_opts_into_tracked_final_fit() -> None:
             "experiments.track_experiment.run_tracked_final_fit",
             return_value=_fake_final_fit_result(),
         ) as mock_tracked,
+        patch(
+            "experiments.hydra_entry.evaluate_holdout",
+            return_value={"mae": 100.0, "mape": 5.0},
+        ) as mock_holdout,
         patch("experiments.run_experiment.fit_final_model") as mock_fit,
         patch("serving.inference.PredictionBundle"),
     ):
@@ -227,6 +236,7 @@ def test_hydra_entry_tracker_wandb_opts_into_tracked_final_fit() -> None:
         result = main.__wrapped__(cfg)
 
     mock_fit.assert_not_called()
+    mock_holdout.assert_called_once()
     mock_tracked.assert_called_once()
     call_kwargs = mock_tracked.call_args.kwargs
     assert call_kwargs["wandb_run_name"] == "final-fit-catboost"

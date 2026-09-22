@@ -89,6 +89,10 @@ def _build_model(model_cfg: dict[str, Any]):
         from catboost import CatBoostRegressor
 
         return CatBoostRegressor(**params)
+    if family == "linear_regression":
+        from sklearn.linear_model import LinearRegression
+
+        return LinearRegression(**params)
     raise ValueError(f"unknown model family: {family}")
 
 
@@ -142,6 +146,9 @@ def _feature_config(training_cfg: dict[str, Any]) -> FeatureConfig:
         target_col=training_cfg["target_col"],
         weight_col=training_cfg.get("weight_col"),
         categorical_cols=training_cfg.get("categorical_cols"),
+        target_transform=training_cfg.get("target_transform", "direct"),
+        distance_col=training_cfg.get("distance_col", "distance"),
+        date_col=training_cfg.get("date_col", "date"),
     )
 
 
@@ -262,6 +269,7 @@ def run_experiment(
         )
 
     scores = np.array([r[metric] for r in fold_results])
+    mape_scores = np.array([r["mape"] for r in fold_results])
 
     return {
         "fold_metrics": fold_results,
@@ -269,6 +277,9 @@ def run_experiment(
         "mean": float(scores.mean()),
         "std": float(scores.std()),
         "worst_fold": float(scores.max()),
+        "mape_mean": float(mape_scores.mean()),
+        "mape_std": float(mape_scores.std()),
+        "mape_worst_fold": float(mape_scores.max()),
     }
 
 
@@ -358,6 +369,7 @@ def run_loss_diagnostic(
         )
 
     scores = np.array([d["overall"][metric] for d in fold_diagnostics])
+    mape_scores = np.array([d["overall"]["mape"] for d in fold_diagnostics])
 
     return {
         "fold_metrics": [d["overall"] for d in fold_diagnostics],
@@ -366,6 +378,9 @@ def run_loss_diagnostic(
         "mean": float(scores.mean()),
         "std": float(scores.std()),
         "worst_fold": float(scores.max()),
+        "mape_mean": float(mape_scores.mean()),
+        "mape_std": float(mape_scores.std()),
+        "mape_worst_fold": float(mape_scores.max()),
         "n_rows": len(dev),
         "n_features": len(feature_config.feature_cols),
     }
@@ -413,22 +428,23 @@ def evaluate_holdout(
 def fit_final_model(
     config: dict[str, Any], cache_dir: str = DEFAULT_CACHE_DIR
 ) -> dict[str, Any]:
-    """Fits one model on the entire pre-October dev pool: no per-fold CV,
-    no October access, no early stopping. config["model"]["params"] is
-    expected to already carry a fixed iteration count chosen from a prior
-    diagnostic run (run_loss_diagnostic / the diagnostic workflow), not a
-    ceiling to search over.
+    """Fits one production model on all labeled rows, including October.
+
+    The caller must evaluate the frozen candidate on October before calling
+    this function; after October is included here it is training data and no
+    longer an unbiased holdout. There is no per-fold CV or early stopping.
+    config["model"]["params"] must already contain the selected fixed
+    iteration count.
 
     Captures a self-referential training curve for logging purposes only:
     Trainer is given the same fitted data as both train and eval, since
-    once every dev row goes into training there is no held-out split left
+    once every labeled row goes into training there is no held-out split left
     to evaluate against. This is not a generalization metric.
     """
     raw = _load_raw(config, cache_dir)
-    dev, _holdout = _split_dev_holdout(config, raw)
 
     cleaner = _build_cleaning_pipeline(config["cleaning"])
-    cleaned = cleaner.fit_transform(dev)
+    cleaned = cleaner.fit_transform(raw)
 
     families = config["features"]["selected"]
     feature_pipeline = build_default_feature_pipeline(families)
@@ -458,7 +474,7 @@ def fit_final_model(
         "feature_pipeline": feature_pipeline,
         "trainer": trainer,
         "train_curve": train_curve,
-        "n_rows": len(dev),
+        "n_rows": len(raw),
         "n_features": len(feature_config.feature_cols),
         "in_sample_metrics": report.overall,
         "raw_columns": [c for c in raw.columns if c != target_col],
