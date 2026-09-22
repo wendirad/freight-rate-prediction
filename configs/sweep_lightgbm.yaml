@@ -11,7 +11,7 @@ parameters:
   n_estimators:
     distribution: int_uniform
     min: 100
-    max: 1000
+    max: 250
   learning_rate:
     distribution: uniform
     min: 0.01
@@ -32,7 +32,3 @@ parameters:
     distribution: uniform
     min: 0.5
     max: 1.0
-  random_state:
-    distribution: int_uniform
-    min: 0
-    max: 10000

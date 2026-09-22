@@ -1,0 +1,26 @@
+# No `program`/`command` key is defined here, so trials must be launched via
+# the Python API (wandb.agent(sweep_id, function=run_catboost_sweep_trial),
+# see src/experiments/sweep_agent.py), not the CLI `wandb agent` command.
+method: bayes
+
+metric:
+  name: mae_mean
+  goal: minimize
+
+parameters:
+  iterations:
+    distribution: int_uniform
+    min: 100
+    max: 500
+  learning_rate:
+    distribution: uniform
+    min: 0.01
+    max: 0.3
+  depth:
+    distribution: int_uniform
+    min: 2
+    max: 8
+  l2_leaf_reg:
+    distribution: uniform
+    min: 1.0
+    max: 10.0
