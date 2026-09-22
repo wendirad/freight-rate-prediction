@@ -1,3 +1,6 @@
+# No `program`/`command` key is defined here, so trials must be launched via
+# the Python API (wandb.agent(sweep_id, function=run_sweep_trial), see
+# src/experiments/sweep_agent.py), not the CLI `wandb agent` command.
 method: bayes
 
 metric:

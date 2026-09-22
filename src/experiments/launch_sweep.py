@@ -1,7 +1,9 @@
 """Registers the lightgbm wandb sweep. Does not run any trials.
 
 Launching the agent (wandb.agent(sweep_id, function=run_sweep_trial)) is a
-separate, manual command-line step.
+separate, manual step. It must be done via the Python API, not the CLI
+`wandb agent` command: configs/sweep_lightgbm.yaml defines no `program`/
+`command` key, so the CLI agent has no script to exec and fails.
 """
 
 from __future__ import annotations

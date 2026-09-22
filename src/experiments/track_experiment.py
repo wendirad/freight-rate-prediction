@@ -56,3 +56,31 @@ def run_tracked_experiment(
         wandb.finish()
 
     return result
+
+
+def log_train_val_loss_curve(
+    model, key: str = "train_val_loss_curve", train_label: str = "training"
+) -> None:
+    """Logs a wandb line plot of train vs val loss per boosting iteration,
+    read from a fitted LightGBM model's evals_result_ (requires the model
+    to have been trained with Trainer.train(df, eval_df=...)).
+    """
+    evals_result = model.evals_result_
+    val_label = next(name for name in evals_result if name != train_label)
+    metric = next(iter(evals_result[train_label]))
+
+    train_loss = evals_result[train_label][metric]
+    val_loss = evals_result[val_label][metric]
+    iterations = list(range(1, len(train_loss) + 1))
+
+    wandb.log(
+        {
+            key: wandb.plot.line_series(
+                xs=iterations,
+                ys=[train_loss, val_loss],
+                keys=["train", "val"],
+                title=f"Train vs val {metric} by boosting iteration",
+                xname="boosting_iteration",
+            )
+        }
+    )

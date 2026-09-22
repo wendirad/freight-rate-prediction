@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 from dataclasses import dataclass
 from typing import Any, Protocol
 
@@ -75,10 +76,28 @@ class Trainer:
             return None
         return df[self.config.weight_col].values
 
-    def train(self, df: pd.DataFrame) -> Trainer:
+    def train(
+        self,
+        df: pd.DataFrame,
+        eval_df: pd.DataFrame | None = None,
+        early_stopping_rounds: int | None = None,
+    ) -> Trainer:
         X, y = self._select_xy(df)
         sample_weight = self._select_weights(df)
-        self.model.fit(X, y, sample_weight=sample_weight)
+
+        fit_kwargs: dict[str, Any] = {}
+        fit_params = inspect.signature(self.model.fit).parameters
+        if eval_df is not None and "eval_set" in fit_params:
+            X_val, y_val = self._select_xy(eval_df)
+            fit_kwargs["eval_set"] = [(X, y), (X_val, y_val)]
+            if "eval_names" in fit_params:
+                fit_kwargs["eval_names"] = ["training", "valid"]
+            if early_stopping_rounds is not None and "callbacks" in fit_params:
+                import lightgbm as lgb
+
+                fit_kwargs["callbacks"] = [lgb.early_stopping(early_stopping_rounds)]
+
+        self.model.fit(X, y, sample_weight=sample_weight, **fit_kwargs)
         self.is_fitted_ = True
         return self
 
