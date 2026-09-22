@@ -6,8 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from scipy import stats
-
-from freight_rate_prediction_challenge.eda_helpers import (
+from utils.eda_helpers import (
     EDAConfig,
     cramers_v,
     find_cluster_driver,

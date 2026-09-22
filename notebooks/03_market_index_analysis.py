@@ -7,7 +7,7 @@ with app.setup:
     import marimo as mo
     import pandas as pd
     import seaborn as sns
-    from freight_rate_prediction_challenge.eda_helpers import (
+    from utils.eda_helpers import (
         EDAConfig,
         cramers_v,
         find_cluster_driver,

@@ -8,7 +8,10 @@ with app.setup:
     import matplotlib.pyplot as plt
     import pandas as pd
     import seaborn as sns
-    from freight_rate_prediction_challenge.eda_helpers import (
+    from geopy.extra.rate_limiter import RateLimiter
+    from geopy.geocoders import Nominatim
+    from scipy.stats import linregress
+    from utils.eda_helpers import (
         EDAConfig,
         cramers_v,
         find_cluster_driver,
@@ -17,9 +20,6 @@ with app.setup:
         report_findings,
         within_std_proportions,
     )
-    from geopy.extra.rate_limiter import RateLimiter
-    from geopy.geocoders import Nominatim
-    from scipy.stats import linregress
 
 
 @app.cell
