@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+
 from data.cleaning import BaseCleaner
 
 
@@ -93,7 +94,17 @@ class EquipmentEncoder(BaseCleaner):
 
 
 class MarketIndexEMA(BaseCleaner):
-    """Computes a per-lane exponential moving average of market_index."""
+    """Computes a per-lane exponential moving average of market_index.
+
+    On training data, state updates chronologically row-by-row since every
+    row belongs to the fold's training set. On non-training data
+    (is_training=False), each row is blended against the frozen
+    lane_last_ema_ learned in fit() only: ema = alpha * current_value +
+    (1 - alpha) * fitted_training_lane_ema. Validation/holdout rows never
+    update the running state or influence each other, so a row's output
+    depends only on its own value and fitted training state, never on
+    which other rows are in the same batch or their order.
+    """
 
     def __init__(
         self,
@@ -136,9 +147,18 @@ class MarketIndexEMA(BaseCleaner):
     def transform(self, df: pd.DataFrame, is_training: bool = False) -> pd.DataFrame:
         self._check_fitted()
         df = df.copy()
-        ordered = df.sort_values(self.date_col)
 
-        state = {} if is_training else dict(self.lane_last_ema_)
+        if not is_training:
+            fitted = df[self.lane_col].map(self.lane_last_ema_)
+            fitted = fitted.fillna(self.global_fallback_)
+            values = df[self.value_col]
+            ema = self.alpha_ * values + (1 - self.alpha_) * fitted
+            ema = ema.where(fitted.notna(), values)
+            df[self.out_col] = ema
+            return df
+
+        ordered = df.sort_values(self.date_col)
+        state: dict[str, float] = {}
         ema_values = pd.Series(index=ordered.index, dtype=float)
 
         for idx, row in ordered.iterrows():

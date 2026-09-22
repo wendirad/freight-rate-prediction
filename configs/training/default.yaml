@@ -22,8 +22,6 @@ weight_col: null
 
 metric: mae
 
-early_stopping_rounds: 50
-
 wandb:
   project: freight-rate-prediction
   default_tags:

@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+
 from data.cleaning import (
     CategoryNormalizer,
     CleaningPipeline,
@@ -95,8 +96,69 @@ def test_market_index_imputer_applies_each_fallback_in_order() -> None:
 
     result = cleaner.transform(prediction)
 
+    # Row 1 (X, Y, 2025-04-01) shares pickup/delivery/date with row 0's
+    # known 8.0, but that lane-date combination was never seen in
+    # training, so stage one (a fitted training lookup) does not fill it
+    # from row 0 anymore; it falls through to the global training median
+    # (22.0) instead. Row 2 (A, B) hits the fitted lane median (12.0).
+    # Row 3 (U, V, 2025-02-02) hits the fitted month-2 median (30.0).
+    # Row 4 (U, V, 2025-04-02) falls through to the global median (22.0).
     assert result["market_index"].tolist() == pytest.approx(
-        [8.0, 8.0, 12.0, 30.0, 22.0]
+        [8.0, 22.0, 12.0, 30.0, 22.0]
+    )
+
+
+def test_market_index_imputer_transform_is_batch_invariant() -> None:
+    """The exact bug this guards against: stage one used to compute a
+    lane/date median from whatever rows happened to be in the dataframe
+    being transformed, so one row's imputed value depended on which other
+    rows were in the same validation batch. It must now come only from
+    fit().
+    """
+    training = pd.DataFrame(
+        {
+            "pickup": ["A"],
+            "delivery": ["B"],
+            "date": pd.to_datetime(["2025-01-01"]),
+            "market_index": [10.0],
+        }
+    )
+    cleaner = MarketIndexImputer().fit(training)
+
+    target_row = pd.DataFrame(
+        {
+            "pickup": ["X"],
+            "delivery": ["Y"],
+            "date": pd.to_datetime(["2025-04-01"]),
+            "market_index": [np.nan],
+        },
+        index=[0],
+    )
+    adversarial_row = pd.DataFrame(
+        {
+            "pickup": ["X"],
+            "delivery": ["Y"],
+            "date": pd.to_datetime(["2025-04-01"]),
+            "market_index": [999.0],
+        },
+        index=[1],
+    )
+    batch = pd.concat([target_row, adversarial_row])
+    batch_reordered = pd.concat([adversarial_row, target_row])
+
+    alone_result = cleaner.transform(target_row)
+    batch_result = cleaner.transform(batch)
+    reordered_result = cleaner.transform(batch_reordered)
+
+    target_alone = alone_result.loc[0, "market_index"]
+    target_in_batch = batch_result.loc[0, "market_index"]
+    target_in_reordered = reordered_result.loc[0, "market_index"]
+
+    assert target_alone == pytest.approx(target_in_batch)
+    assert target_alone == pytest.approx(target_in_reordered)
+    assert target_alone != pytest.approx(999.0)
+    assert batch_result.loc[1, "market_index"] == pytest.approx(
+        reordered_result.loc[1, "market_index"]
     )
 
 

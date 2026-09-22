@@ -78,7 +78,7 @@ def test_equipment_encoder_reuses_sorted_training_categories() -> None:
     assert "equipment_Flatbed" not in result
 
 
-def test_market_index_ema_uses_fitted_lane_state_and_chronological_order() -> None:
+def test_market_index_ema_prediction_blends_value_with_fitted_lane_state_only() -> None:
     training = pd.DataFrame(
         {
             "lane": ["A -> B", "A -> B", "C -> D"],
@@ -103,7 +103,60 @@ def test_market_index_ema_uses_fitted_lane_state_and_chronological_order() -> No
     assert encoder.global_fallback_ == pytest.approx(20.0)
     assert encoder.lane_last_ema_ == pytest.approx({"A -> B": 20.0, "C -> D": 20.0})
     assert result.index.tolist() == [5, 3, 8]
-    assert result["market_index_ema"].tolist() == pytest.approx([40.0, 30.0, 15.0])
+    # Each row is blended only against fitted training state (alpha=0.5):
+    # idx5: 0.5*50 + 0.5*20 = 35.0; idx3: 0.5*40 + 0.5*20 = 30.0;
+    # idx8 (unseen lane): falls back to global_fallback_ for "prev",
+    # 0.5*10 + 0.5*20 = 15.0. No row's output depends on another row.
+    assert result["market_index_ema"].tolist() == pytest.approx([35.0, 30.0, 15.0])
+    # Fitted state is untouched by transforming prediction data.
+    assert encoder.lane_last_ema_ == pytest.approx({"A -> B": 20.0, "C -> D": 20.0})
+
+
+def test_market_index_ema_prediction_transform_is_batch_invariant() -> None:
+    training = pd.DataFrame(
+        {
+            "lane": ["A -> B", "A -> B", "C -> D"],
+            "date": pd.to_datetime(["2025-01-01", "2025-01-02", "2025-01-01"]),
+            "market_index": [10.0, 30.0, 20.0],
+        }
+    )
+    encoder = MarketIndexEMA(span=3).fit(training)
+    fitted_state_before = dict(encoder.lane_last_ema_)
+
+    target_row = pd.DataFrame(
+        {
+            "lane": ["A -> B"],
+            "date": pd.to_datetime(["2025-01-04"]),
+            "market_index": [50.0],
+        },
+        index=[0],
+    )
+    adversarial_row = pd.DataFrame(
+        {
+            "lane": ["A -> B"],
+            "date": pd.to_datetime(["2025-01-03"]),
+            "market_index": [999.0],
+        },
+        index=[1],
+    )
+    batch = pd.concat([target_row, adversarial_row])
+    batch_reordered = pd.concat([adversarial_row, target_row])
+
+    alone_result = encoder.transform(target_row, is_training=False)
+    batch_result = encoder.transform(batch, is_training=False)
+    reordered_result = encoder.transform(batch_reordered, is_training=False)
+
+    target_alone = alone_result.loc[0, "market_index_ema"]
+    target_in_batch = batch_result.loc[0, "market_index_ema"]
+    target_in_reordered = reordered_result.loc[0, "market_index_ema"]
+
+    assert target_alone == pytest.approx(target_in_batch)
+    assert target_alone == pytest.approx(target_in_reordered)
+    assert batch_result.loc[1, "market_index_ema"] == pytest.approx(
+        reordered_result.loc[1, "market_index_ema"]
+    )
+    # Transforming prediction data never mutates fitted training state.
+    assert encoder.lane_last_ema_ == pytest.approx(fitted_state_before)
 
 
 def test_market_index_ema_training_transform_does_not_use_fitted_lane_state() -> None:

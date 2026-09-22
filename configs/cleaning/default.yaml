@@ -1,0 +1,42 @@
+type_caster:
+  date_col: date
+  numeric_cols:
+    - pickup_lat
+    - pickup_lon
+    - delivery_lat
+    - delivery_lon
+    - distance
+    - weight
+    - market_index
+    - quote_signal
+    - posted_rate
+
+category_normalizer:
+  columns:
+    - pickup
+    - delivery
+    - equipment
+
+weight_cleaner:
+  equipment_col: equipment
+  weight_col: weight
+
+market_index_imputer:
+  pickup_col: pickup
+  delivery_col: delivery
+  date_col: date
+  target_col: market_index
+
+duplicate_remover:
+  id_col: load_id
+
+lane_distance_outlier_remover:
+  pickup_col: pickup
+  delivery_col: delivery
+  distance_col: distance
+  tolerance: 0.20
+
+target_outlier_remover:
+  target_col: posted_rate
+  lower_q: 0.005
+  upper_q: 0.995

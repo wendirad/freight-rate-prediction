@@ -1,9 +1,11 @@
-"""Caching for pipeline output dataframes, keyed by config hash.
+"""Generic dataframe caching keyed by config hash.
 
 Separate from CleaningPipeline.save/load and FeatureEngineeringPipeline.save/
-load, which persist the fitted pipeline object. This caches the resulting
-dataframe itself, so reruns during experimentation with an unchanged config
-skip recomputation entirely instead of refitting and retransforming.
+load, which persist the fitted pipeline object. In the experiment path
+(run_experiment.py), this caches only the loaded, schema-validated,
+chronologically sorted raw source dataframe: cleaning and feature
+engineering happen per cross-validation fold on data that must not be fit
+before entering the fold loop, so their outputs are never cached here.
 """
 
 from __future__ import annotations

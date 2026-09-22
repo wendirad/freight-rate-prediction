@@ -153,16 +153,19 @@ class WeightCleaner(BaseCleaner):
 
 
 class MarketIndexImputer(BaseCleaner):
-    """Fills missing market_index in three stages, most trustworthy first.
+    """Fills missing market_index in four stages, most trustworthy first.
 
-    Stage one matches a missing row against any other row in the same
-    batch sharing pickup, delivery, and date, using the median of those
-    matches, since that reflects the same lane under the same day's
-    market conditions. Stage two falls back to a lane level median
-    learned from training (pickup, delivery). Stage three falls back to
-    a month level median learned from training, respecting the seasonal
-    structure confirmed during EDA. A global training median is the last
-    resort. Runs on both training and prediction data.
+    Stage one matches a missing row against the training median for rows
+    sharing pickup, delivery, and date, since that reflects the same lane
+    under the same day's market conditions. Stage two falls back to a lane
+    level median learned from training (pickup, delivery). Stage three
+    falls back to a month level median learned from training, respecting
+    the seasonal structure confirmed during EDA. A global training median
+    is the last resort. All four stages are learned once from training
+    data in fit() and applied identically, row-by-row, during transform;
+    transform never computes a statistic from the dataframe it is filling,
+    so imputing one row can never depend on which other rows happen to be
+    in the same batch. Runs on both training and prediction data.
     """
 
     def __init__(
@@ -177,12 +180,21 @@ class MarketIndexImputer(BaseCleaner):
         self.delivery_col = delivery_col
         self.date_col = date_col
         self.target_col = target_col
+        self.lane_date_medians_: dict[tuple, float] = {}
         self.lane_medians_: dict[tuple, float] = {}
         self.month_medians_: dict[int, float] = {}
         self.global_median_: float = np.nan
 
     def fit(self, df: pd.DataFrame) -> MarketIndexImputer:
         known = df[df[self.target_col].notna()].copy()
+
+        self.lane_date_medians_ = (
+            known.groupby([self.pickup_col, self.delivery_col, self.date_col])[
+                self.target_col
+            ]
+            .median()
+            .to_dict()
+        )
 
         self.lane_medians_ = (
             known.groupby([self.pickup_col, self.delivery_col])[self.target_col]
@@ -205,13 +217,6 @@ class MarketIndexImputer(BaseCleaner):
         if not missing_mask.any():
             return df
 
-        known = df[df[self.target_col].notna()][
-            [self.pickup_col, self.delivery_col, self.date_col, self.target_col]
-        ]
-        lane_date_median = known.groupby(
-            [self.pickup_col, self.delivery_col, self.date_col]
-        )[self.target_col].median()
-
         missing_idx = df.index[missing_mask]
         keys = list(
             zip(
@@ -221,7 +226,7 @@ class MarketIndexImputer(BaseCleaner):
             )
         )
         stage_one = pd.Series(
-            [lane_date_median.get(k, np.nan) for k in keys], index=missing_idx
+            [self.lane_date_medians_.get(k, np.nan) for k in keys], index=missing_idx
         )
         df.loc[missing_idx, self.target_col] = stage_one
 
