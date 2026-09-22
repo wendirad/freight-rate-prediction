@@ -1,5 +1,7 @@
 # Freight Rate Prediction
 
+[![Unit Test](https://github.com/wendirad/freight-rate-prediction/actions/workflows/unittests.yml/badge.svg)](https://github.com/wendirad/freight-rate-prediction/actions/workflows/unittests.yml)
+
 An end-to-end machine-learning project for predicting truckload posted rates.
 It provides leakage-safe temporal validation, reproducible experiments, final
 model training, submission generation, and a Dockerized inference service.
@@ -51,7 +53,7 @@ with the raw shipment and market variables plus calendar and equipment features.
 Requires Python 3.13+ and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-git clone <repository-url>
+git clone git@github.com:wendirad/freight-rate-prediction.git
 cd freight-rate-prediction
 uv sync
 ```
