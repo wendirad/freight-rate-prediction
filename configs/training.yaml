@@ -1,0 +1,16 @@
+feature_cols:
+  - distance
+  - weight
+  - market_index
+  - quote_signal
+  - month_sin
+  - month_cos
+  - day_of_week
+  - market_index_ema
+  - quote_signal_zscore
+
+target_col: posted_rate
+
+weight_col: null
+
+metric: mae

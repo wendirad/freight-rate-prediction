@@ -1,0 +1,23 @@
+raw_path: data/raw/train-test.csv
+
+date_col: date
+
+required_columns:
+  - load_id
+  - pickup
+  - delivery
+  - pickup_lat
+  - pickup_lon
+  - delivery_lat
+  - delivery_lon
+  - distance
+  - equipment
+  - weight
+  - date
+  - market_index
+  - quote_signal
+  - posted_rate
+
+split:
+  val_start: "2025-09-01"
+  test_start: "2025-10-01"

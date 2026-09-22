@@ -213,14 +213,45 @@ class FeatureEngineeringPipeline:
         return joblib.load(path)
 
 
-def build_default_feature_pipeline() -> FeatureEngineeringPipeline:
-    return FeatureEngineeringPipeline(
-        [
-            LaneBuilder(),
-            CyclicalMonthEncoder(),
-            DayOfWeekEncoder(),
-            EquipmentEncoder(),
-            MarketIndexEMA(),
-            QuoteSignalZScore(),
-        ]
-    )
+FAMILY_STEPS: dict[str, list[type[BaseCleaner]]] = {
+    "calendar": [CyclicalMonthEncoder, DayOfWeekEncoder],
+    "lane": [LaneBuilder],
+    "equipment": [EquipmentEncoder],
+    "market_index_ema": [MarketIndexEMA],
+    "quote_signal_zscore": [QuoteSignalZScore],
+}
+
+# Families whose steps depend on the lane column that LaneBuilder produces.
+_REQUIRES_LANE = {"lane", "market_index_ema"}
+
+
+def build_default_feature_pipeline(
+    families: list[str] | None = None,
+) -> FeatureEngineeringPipeline:
+    """Builds a feature pipeline from the requested family names.
+
+    families should match the keys in configs/features.yaml. LaneBuilder
+    runs automatically, once, whenever any requested family needs it (lane
+    itself, or market_index_ema, which depends on the lane column), even if
+    "lane" was not explicitly requested.
+    """
+    if families is None:
+        families = list(FAMILY_STEPS.keys())
+
+    unknown = [f for f in families if f not in FAMILY_STEPS]
+    if unknown:
+        raise ValueError(f"unknown feature families: {unknown}")
+
+    needs_lane = any(f in _REQUIRES_LANE for f in families)
+
+    steps: list[BaseCleaner] = []
+    if needs_lane:
+        steps.append(LaneBuilder())
+
+    for family in families:
+        if family == "lane":
+            continue
+        for step_cls in FAMILY_STEPS[family]:
+            steps.append(step_cls())
+
+    return FeatureEngineeringPipeline(steps)

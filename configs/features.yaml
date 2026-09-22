@@ -1,0 +1,20 @@
+# families this run selects; must be a subset of the keys under `families`
+selected:
+  - calendar
+  - lane
+  - equipment
+  - market_index_ema
+  - quote_signal_zscore
+
+families:
+  calendar:
+    - CyclicalMonthEncoder
+    - DayOfWeekEncoder
+  lane:
+    - LaneBuilder
+  equipment:
+    - EquipmentEncoder
+  market_index_ema:
+    - MarketIndexEMA
+  quote_signal_zscore:
+    - QuoteSignalZScore
