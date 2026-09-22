@@ -23,6 +23,7 @@ class FeatureConfig:
     target_col: str = "posted_rate"
     weight_col: str | None = None
     group_col: str | None = "equipment"
+    categorical_cols: list[str] | None = None
 
 
 def compute_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float]:
@@ -87,15 +88,33 @@ class Trainer:
 
         fit_kwargs: dict[str, Any] = {}
         fit_params = inspect.signature(self.model.fit).parameters
+
+        if self.config.categorical_cols and "cat_features" in fit_params:
+            fit_kwargs["cat_features"] = [
+                c for c in self.config.categorical_cols if c in X.columns
+            ]
+
         if eval_df is not None and "eval_set" in fit_params:
             X_val, y_val = self._select_xy(eval_df)
-            fit_kwargs["eval_set"] = [(X, y), (X_val, y_val)]
-            if "eval_names" in fit_params:
-                fit_kwargs["eval_names"] = ["training", "valid"]
-            if early_stopping_rounds is not None and "callbacks" in fit_params:
-                import lightgbm as lgb
+            is_catboost = type(self.model).__module__.startswith("catboost")
+            if is_catboost:
+                # CatBoost auto-tracks a "learn" curve from the X/y already
+                # passed to fit; giving it the training pair again as part
+                # of eval_set would add a spurious extra key that shadows
+                # the real validation curve in evals_result_.
+                fit_kwargs["eval_set"] = [(X_val, y_val)]
+            else:
+                fit_kwargs["eval_set"] = [(X, y), (X_val, y_val)]
+                if "eval_names" in fit_params:
+                    fit_kwargs["eval_names"] = ["training", "valid"]
 
-                fit_kwargs["callbacks"] = [lgb.early_stopping(early_stopping_rounds)]
+            if early_stopping_rounds is not None:
+                if "early_stopping_rounds" in fit_params:
+                    fit_kwargs["early_stopping_rounds"] = early_stopping_rounds
+                elif "callbacks" in fit_params:
+                    import lightgbm as lgb
+
+                    fit_kwargs["callbacks"] = [lgb.early_stopping(early_stopping_rounds)]
 
         self.model.fit(X, y, sample_weight=sample_weight, **fit_kwargs)
         self.is_fitted_ = True
