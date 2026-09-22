@@ -14,7 +14,7 @@ with app.setup:
     )
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _():
     mo.md(r"""
     # Equipment and Date Analysis
@@ -79,7 +79,7 @@ def _(data):
     _figure
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _():
     report_findings(
         """Equipment showed negligible association with market_index and distance's multimodality (both near zero Cramér's V), and its class distribution is moderately imbalanced (Dry Van 57 percent, Reefer 25 percent, Flatbed 18 percent).""",

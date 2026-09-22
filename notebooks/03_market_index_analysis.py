@@ -20,7 +20,7 @@ with app.setup:
     )
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _():
     mo.md(r"""
     # Market Index Analysis
@@ -52,7 +52,7 @@ def _(data):
     return (recovered_data,)
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _():
     report_findings(
         """Among the 374 observations with missing market_index, only 24 could be matched with another observation having the same pickup, delivery, and date, giving a recovery rate of approximately 6.42%. Although this method provides limited coverage, these matches are the most suitable for recovery because they represent the same transportation lane under the same day's market conditions. The median market_index of matching observations was therefore used to recover these values."""
@@ -85,7 +85,7 @@ def _(category, data):
     chart.figure
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _():
     report_findings(
         """The market index distribution is multimodal, with three visible peaks around 1.0, 1.2, and 1.35, rather than a single unimodal shape, despite an overall skew of only 0.214 which masks this structure. The main mass sits between roughly 0.9 and 1.2, with a longer tail extending toward 1.45 to 1.5, and the boxplot shows no flagged outliers with whiskers spanning the full observed range.
@@ -158,7 +158,7 @@ def _(data, time_granularity):
     temporal_chart.figure
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _():
     report_findings(
         """The market_index's multimodal pattern holds up at every time resolution tested, monthly, biweekly, and triweekly, with the same peaks recurring inside each window rather than resolving into a single mode. This rules out calendar time granularity as the source of the multimodality."""
@@ -176,7 +176,7 @@ def _(data):
     missing_rate.to_frame()
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _():
     report_findings(
         """

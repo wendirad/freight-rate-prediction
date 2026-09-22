@@ -16,7 +16,7 @@ with app.setup:
     )
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _():
     mo.md(r"""
     # Posted Rate Analysis
@@ -143,7 +143,7 @@ def _(target_data):
     _figure
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _():
     mo.md(r"""
     ## **Conclusion**

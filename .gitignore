@@ -162,5 +162,5 @@ cython_debug/
 #.idea/
 
 # CSV Data
-data/
+/data/
 */__marimo__/

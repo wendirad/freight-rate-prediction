@@ -15,7 +15,7 @@ with app.setup:
     )
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _():
     mo.md(r"""
     # Quote Signal Analysis
@@ -56,7 +56,7 @@ def _(data):
     chart.figure
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _():
     report_findings(
         """Quote_signal shows a leptokurtic distribution, more tightly concentrated around the mean than normal (74.6% within 1sd vs the normal reference of 68%) but with heavier tails, more extreme values beyond 3sd than normal would predict (98.8% vs the 99.7% reference). This is distinct from market_index's near-symmetric mild skew and distance's smooth right-skew, both found earlier, making quote_signal the only one of the three exhibiting fat-tailed, sharp-peaked behavior rather than simple skew.""",

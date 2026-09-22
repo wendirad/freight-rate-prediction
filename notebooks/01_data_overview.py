@@ -12,7 +12,7 @@ with app.setup:
     )
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _():
     mo.md(r"""
     # Freight Rate Prediction: Data Overview
@@ -76,7 +76,7 @@ def _(data):
     return
 
 
-@app.cell(hide_code=True)
+@app.cell
 def _():
     report_findings(
         "The dataset has 48,000 rows and 14 expected columns. Missing values are "
@@ -85,6 +85,7 @@ def _():
         title="Next steps",
     )
     return
+
 
 if __name__ == "__main__":
     app.run()
