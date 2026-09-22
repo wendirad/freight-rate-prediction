@@ -1171,20 +1171,26 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "catboost" },
-    { name = "dvc" },
-    { name = "geopandas" },
     { name = "hydra-core" },
     { name = "joblib" },
-    { name = "lightgbm" },
+    { name = "matplotlib" },
     { name = "numpy" },
-    { name = "openlayers" },
     { name = "pandas" },
     { name = "pyarrow" },
+    { name = "pyyaml" },
     { name = "scikit-learn" },
+    { name = "streamlit" },
+]
+
+[package.optional-dependencies]
+all = [
+    { name = "dvc" },
+    { name = "geopandas" },
+    { name = "lightgbm" },
+    { name = "openlayers" },
     { name = "seaborn" },
     { name = "shapely" },
     { name = "statsmodels" },
-    { name = "streamlit" },
     { name = "vegafusion" },
     { name = "vl-convert-python" },
     { name = "wandb" },
@@ -1197,30 +1203,34 @@ dev = [
     { name = "mypy" },
     { name = "pytest" },
     { name = "ruff" },
+    { name = "wandb" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "catboost", specifier = ">=1.2.10" },
-    { name = "dvc", specifier = ">=3.67.1" },
-    { name = "geopandas", specifier = ">=1.1.4" },
+    { name = "dvc", marker = "extra == 'all'", specifier = ">=3.67.1" },
+    { name = "geopandas", marker = "extra == 'all'", specifier = ">=1.1.4" },
     { name = "hydra-core", specifier = ">=1.3.7" },
     { name = "joblib", specifier = ">=1.6.0" },
-    { name = "lightgbm", specifier = ">=4.7.0" },
+    { name = "lightgbm", marker = "extra == 'all'", specifier = ">=4.7.0" },
+    { name = "matplotlib", specifier = ">=3.8,<4" },
     { name = "numpy", specifier = ">=2.5.3" },
-    { name = "openlayers", specifier = ">=0.1.6" },
+    { name = "openlayers", marker = "extra == 'all'", specifier = ">=0.1.6" },
     { name = "pandas", specifier = ">=3.0.5" },
     { name = "pyarrow", specifier = ">=13.0" },
+    { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "scikit-learn", specifier = ">=1.9.1" },
-    { name = "seaborn", specifier = ">=0.13.2" },
-    { name = "shapely", specifier = ">=2.1.2" },
-    { name = "statsmodels", specifier = ">=0.15.0" },
+    { name = "seaborn", marker = "extra == 'all'", specifier = ">=0.13.2" },
+    { name = "shapely", marker = "extra == 'all'", specifier = ">=2.1.2" },
+    { name = "statsmodels", marker = "extra == 'all'", specifier = ">=0.15.0" },
     { name = "streamlit", specifier = ">=1.64.0" },
-    { name = "vegafusion", specifier = ">=2.0.3" },
-    { name = "vl-convert-python", specifier = ">=1.9.0" },
-    { name = "wandb", specifier = ">=0.30.0" },
-    { name = "xgboost", specifier = ">=3.4.1" },
+    { name = "vegafusion", marker = "extra == 'all'", specifier = ">=2.0.3" },
+    { name = "vl-convert-python", marker = "extra == 'all'", specifier = ">=1.9.0" },
+    { name = "wandb", marker = "extra == 'all'", specifier = ">=0.30.0" },
+    { name = "xgboost", marker = "extra == 'all'", specifier = ">=3.4.1" },
 ]
+provides-extras = ["all"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1228,6 +1238,7 @@ dev = [
     { name = "mypy", specifier = ">=2.3.1" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "ruff", specifier = ">=0.16.8" },
+    { name = "wandb", specifier = ">=0.30.0" },
 ]
 
 [[package]]
