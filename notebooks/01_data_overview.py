@@ -34,7 +34,6 @@ def _():
     | `quote_signal` | Live truck/cargo balance indicator |
     | `posted_rate` | Prediction target: total shipment rate |
     """)
-    return
 
 
 @app.cell
@@ -49,7 +48,6 @@ def _():
 def _(data):
     with mo.redirect_stdout():
         data.info()
-    return
 
 
 @app.cell
@@ -60,20 +58,17 @@ def _(data):
         "missing_cells": int(data.isna().sum().sum()),
     }
     quality_summary
-    return
 
 
 @app.cell
 def _(data):
     missing = data.isna().sum().rename("missing_count")
     missing[missing > 0].to_frame()
-    return
 
 
 @app.cell
 def _(data):
     data.describe(include="all")
-    return
 
 
 @app.cell
@@ -84,7 +79,6 @@ def _():
         "those cases before deciding how to handle them.",
         title="Next steps",
     )
-    return
 
 
 if __name__ == "__main__":

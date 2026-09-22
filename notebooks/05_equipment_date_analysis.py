@@ -7,7 +7,6 @@ with app.setup:
     import marimo as mo
     import matplotlib.pyplot as plt
     import seaborn as sns
-
     from freight_rate_prediction_challenge.eda_helpers import (
         load_freight_data,
         report_findings,

@@ -8,7 +8,6 @@ with app.setup:
     import marimo as mo
     import matplotlib.pyplot as plt
     import seaborn as sns
-
     from freight_rate_prediction_challenge.eda_helpers import (
         load_freight_data,
         plot_qq,
@@ -24,7 +23,6 @@ def _():
     mo.md(r"""
     # Weight Analysis
     """)
-    return
 
 
 @app.cell
@@ -37,13 +35,11 @@ def _():
 @app.cell
 def _(valid_weight):
     plot_qq(valid_weight)
-    return
 
 
 @app.cell
 def _(valid_weight):
     within_std_proportions(valid_weight)
-    return
 
 
 @app.cell
@@ -51,7 +47,6 @@ def _():
     report_findings(
         """After ignoring the invalid negative values, 67.18% of the weight observations fall within one standard deviation of the mean and 94.93% fall within two standard deviations. These are very close to the theoretical 68% and 95% expected for a normal distribution. The Q-Q plot supports this in the central portion of the data, where observations closely follow the reference line. However, deviations at both ends indicate that the distribution is not perfectly normal, mainly because weight has clear lower and upper boundaries, including a concentration near the maximum weight of 47,500."""
     )
-    return
 
 
 @app.cell
@@ -69,7 +64,6 @@ def _(data):
         .properties(width=700, height=320, title="Distance vs Weight")
     )
     scatter
-    return
 
 
 @app.cell
@@ -77,7 +71,6 @@ def _():
     report_findings(
         """The combined analysis of distance and equipment type shows that neither variable strongly explains the variation in weight. Across Dry Van, Reefer, and Flatbed, weights remain widely distributed at nearly every distance, with substantial overlap between equipment types. There is no clear trend of weight increasing or decreasing with distance, and separating the data by equipment produces very similar patterns. This suggests that weight is likely driven by other shipment characteristics or interactions not captured by these two features alone."""
     )
-    return
 
 
 @app.cell
@@ -92,7 +85,6 @@ def _(data):
         facet_kws={"sharey": False},
     )
     distribution.figure
-    return
 
 
 @app.cell
@@ -101,7 +93,6 @@ def _(data):
     sns.boxplot(data=data, x="equipment", y="weight", ax=axis)
     figure.tight_layout()
     figure
-    return
 
 
 @app.cell
@@ -109,7 +100,6 @@ def _(data):
     data.groupby("equipment")["weight"].describe(
         percentiles=[0.05, 0.25, 0.50, 0.75, 0.95]
     )
-    return
 
 
 @app.cell
@@ -117,7 +107,6 @@ def _():
     report_findings(
         """The weight distribution is nearly identical across Dry Van, Reefer, and Flatbed equipment. All three have a mean and median around 31K and a standard deviation of roughly 9K, with very similar ranges and percentiles. This suggests that equipment type alone does not have a meaningful effect on weight, and the variation in weight is likely explained by other features or combinations of features in the dataset."""
     )
-    return
 
 
 @app.cell
@@ -134,7 +123,6 @@ def _(data, valid_weight):
         .rename("missing_rate")
     )
     mo.vstack([weight_quality, missing_by_equipment.to_frame()])
-    return
 
 
 @app.cell
@@ -144,7 +132,6 @@ def _():
         title="Conclusion",
         kind="success",
     )
-    return
 
 
 if __name__ == "__main__":
