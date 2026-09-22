@@ -84,6 +84,8 @@ def test_default_composition_selects_candidate_preset() -> None:
     assert composed["features"]["selected"] == ["calendar", "equipment"]
     assert composed["training"]["feature_cols"] == CANDIDATE_FEATURE_COLS
     assert composed["model"]["family"] == "catboost"
+    assert composed["model"]["params"]["loss_function"] == "MAE"
+    assert composed["model"]["params"]["eval_metric"] == "MAE"
     assert composed["model"]["params"]["random_state"] == 42
     assert composed["workflow"]["name"] == "final_fit"
     assert composed["tracker"] == "none"

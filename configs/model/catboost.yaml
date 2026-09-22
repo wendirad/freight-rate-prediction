@@ -4,5 +4,7 @@ params:
   iterations: 500
   learning_rate: 0.05
   depth: 6
+  loss_function: MAE
+  eval_metric: MAE
   random_state: 42
   verbose: false
