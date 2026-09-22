@@ -1,0 +1,36 @@
+# @package _global_
+# All four useful families (calendar, equipment, market_index_ema,
+# quote_signal_zscore) plus native lane: baseline 5 columns + every
+# engineered numeric column from the four real families + the raw "lane"
+# string passed to the estimator as a categorical feature (see
+# configs/experiment/feature_lane.yaml for the mechanism). No ordinal,
+# frequency, or target encoding for lane.
+# Requires a model with native categorical support (CatBoost), e.g.:
+#   uv run python -m experiments.hydra_entry model=catboost experiment=features_combined_native_lane
+
+features:
+  selected:
+    - calendar
+    - equipment
+    - market_index_ema
+    - quote_signal_zscore
+    - lane
+
+training:
+  feature_cols:
+    - distance
+    - pickup_lat
+    - pickup_lon
+    - delivery_lat
+    - delivery_lon
+    - month_sin
+    - month_cos
+    - day_of_week
+    - equipment_Dry Van
+    - equipment_Flatbed
+    - equipment_Reefer
+    - market_index_ema
+    - quote_signal_zscore
+    - lane
+  categorical_cols:
+    - lane

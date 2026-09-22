@@ -1,0 +1,3 @@
+# Default workflow: a plain run_experiment CV pass, no wandb tracking, no
+# early stopping, no diagnostics. hydra_entry.py branches on `name`.
+name: none

@@ -1,0 +1,44 @@
+# @package _global_
+# Full-feature preset: every USEFUL engineered feature family, explicitly
+# selected, with every column the model receives explicitly listed.
+# Requires an explicit override, e.g.:
+#   uv run python -m experiments.hydra_entry experiment=features_combined_v1
+#
+# lane is permanently excluded from `selected`: it was tested both raw
+# (never a usable numeric feature for LGBMRegressor/XGBRegressor) and via
+# native CatBoost categorical handling (configs/experiment/feature_lane.yaml,
+# configs/experiment/features_combined_native_lane.yaml) — in both cases it
+# added no signal alone (~192.27 vs ~192.70 baseline) and actively hurt
+# accuracy when combined with the other four families (126.08 -> 142.17
+# mean MAE, std roughly doubled), likely because it's a high-cardinality
+# categorical redundant with market_index_ema (already a per-lane signal).
+# LaneBuilder still runs automatically as market_index_ema's internal
+# dependency (build_default_feature_pipeline._REQUIRES_LANE) even without
+# "lane" listed here — that's unrelated to feature_cols and unaffected by
+# this exclusion.
+
+features:
+  selected:
+    - calendar
+    - equipment
+    - market_index_ema
+    - quote_signal_zscore
+
+training:
+  feature_cols:
+    - distance
+    - pickup_lat
+    - pickup_lon
+    - delivery_lat
+    - delivery_lon
+    - weight
+    - market_index
+    - quote_signal
+    - month_sin
+    - month_cos
+    - day_of_week
+    - market_index_ema
+    - quote_signal_zscore
+    - equipment_Dry Van
+    - equipment_Flatbed
+    - equipment_Reefer

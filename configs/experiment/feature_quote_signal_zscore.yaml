@@ -1,0 +1,18 @@
+# @package _global_
+# quote_signal_zscore-family ablation: baseline 5 columns + QuoteSignalZScore
+# output (quote_signal_zscore). Differs from
+# configs/experiment/baseline.yaml only in features.selected and the one
+# added training.feature_cols entry.
+
+features:
+  selected:
+    - quote_signal_zscore
+
+training:
+  feature_cols:
+    - distance
+    - pickup_lat
+    - pickup_lon
+    - delivery_lat
+    - delivery_lon
+    - quote_signal_zscore

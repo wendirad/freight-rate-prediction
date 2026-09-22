@@ -1,0 +1,26 @@
+# @package _global_
+# Removal ablation from features_combined_v1 (126.08 mean MAE baseline):
+# drops the equipment family (equipment_Dry Van/Flatbed/Reefer one-hots).
+# Everything else matches features_combined_v1 exactly.
+
+features:
+  selected:
+    - calendar
+    - market_index_ema
+    - quote_signal_zscore
+
+training:
+  feature_cols:
+    - distance
+    - pickup_lat
+    - pickup_lon
+    - delivery_lat
+    - delivery_lon
+    - weight
+    - market_index
+    - quote_signal
+    - month_sin
+    - month_cos
+    - day_of_week
+    - market_index_ema
+    - quote_signal_zscore

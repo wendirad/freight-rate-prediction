@@ -1,0 +1,20 @@
+# @package _global_
+# Equipment-family ablation: baseline 5 columns + EquipmentEncoder output
+# (one-hot per equipment category). Differs from
+# configs/experiment/baseline.yaml only in features.selected and the three
+# added training.feature_cols entries.
+
+features:
+  selected:
+    - equipment
+
+training:
+  feature_cols:
+    - distance
+    - pickup_lat
+    - pickup_lon
+    - delivery_lat
+    - delivery_lon
+    - equipment_Dry Van
+    - equipment_Flatbed
+    - equipment_Reefer

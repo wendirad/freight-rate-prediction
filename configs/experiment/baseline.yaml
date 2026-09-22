@@ -1,0 +1,19 @@
+# @package _global_
+# Baseline preset: minimal distance-and-location model, no engineered
+# feature families. This is the reference baseline every feature ablation
+# is measured against, and config.yaml's defaults list selects it by
+# default, so a bare Hydra invocation resolves to this preset.
+#
+# Model params are left at configs/model/lightgbm.yaml's defaults,
+# including the fixed random_state: 42.
+
+features:
+  selected: []
+
+training:
+  feature_cols:
+    - distance
+    - pickup_lat
+    - pickup_lon
+    - delivery_lat
+    - delivery_lon

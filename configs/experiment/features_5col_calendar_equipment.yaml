@@ -1,0 +1,24 @@
+# @package _global_
+# Controlled comparison variant: the true 5 baseline columns (no weight,
+# market_index, quote_signal) + calendar + equipment. Compared against
+# features_calendar_equipment_only.yaml, which keeps those 3 extra raw
+# columns (8 total) alongside calendar + equipment (121.03 mean MAE).
+
+features:
+  selected:
+    - calendar
+    - equipment
+
+training:
+  feature_cols:
+    - distance
+    - pickup_lat
+    - pickup_lon
+    - delivery_lat
+    - delivery_lon
+    - month_sin
+    - month_cos
+    - day_of_week
+    - equipment_Dry Van
+    - equipment_Flatbed
+    - equipment_Reefer

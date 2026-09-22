@@ -1,0 +1,16 @@
+defaults:
+  - data: default
+  - cleaning: default
+  - features: default
+  - training: default
+  - model: catboost
+  - experiment: candidate
+  - workflow: final_fit
+  - _self_
+
+n_folds: 5
+cache_dir: data/interim/cache
+
+# W&B tracking is off by default for every workflow. Enable it explicitly
+# with `tracker=wandb`.
+tracker: none

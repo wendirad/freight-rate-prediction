@@ -1,0 +1,20 @@
+# @package _global_
+# Calendar-family ablation: baseline 5 columns + CyclicalMonthEncoder +
+# DayOfWeekEncoder output (month_sin, month_cos, day_of_week). Differs from
+# configs/experiment/baseline.yaml only in features.selected and the three
+# added training.feature_cols entries.
+
+features:
+  selected:
+    - calendar
+
+training:
+  feature_cols:
+    - distance
+    - pickup_lat
+    - pickup_lon
+    - delivery_lat
+    - delivery_lon
+    - month_sin
+    - month_cos
+    - day_of_week

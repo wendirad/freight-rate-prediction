@@ -1,0 +1,41 @@
+# @package _global_
+# Best-known CatBoost feature set from the ablation study, and the
+# project's default experiment preset (see configs/config.yaml).
+# 8 raw columns (distance, 4x lat/lon, weight, market_index, quote_signal)
+# + calendar + equipment. Beat every other family combination tried
+# (removing market_index_ema and quote_signal_zscore both improved mean
+# MAE; dropping the 3 non-baseline raw columns to match the "5 baseline
+# columns" framing made things worse, 141.05 vs 121.03). 3-seed stability
+# check: avg-of-means 121.63, std-across-seeds 0.44, worst-fold-across-
+# seeds 147.90 (seeds 42/123/2026). Model family and seed come from
+# whichever `model=` override is composed alongside this (configs/model/
+# catboost.yaml fixes random_state: 42 by default).
+#
+# This is the default experiment, so the diagnostic workflow that
+# determines a final iteration count before any holdout evaluation just
+# needs:
+#   uv run train
+# Explicit form (also how to run this preset with an override):
+#   uv run python -m experiments.hydra_entry model=catboost experiment=candidate workflow=diagnostic
+
+features:
+  selected:
+    - calendar
+    - equipment
+
+training:
+  feature_cols:
+    - distance
+    - pickup_lat
+    - pickup_lon
+    - delivery_lat
+    - delivery_lon
+    - weight
+    - market_index
+    - quote_signal
+    - month_sin
+    - month_cos
+    - day_of_week
+    - equipment_Dry Van
+    - equipment_Flatbed
+    - equipment_Reefer

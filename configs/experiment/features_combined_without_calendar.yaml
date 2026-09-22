@@ -1,0 +1,26 @@
+# @package _global_
+# Removal ablation from features_combined_v1 (126.08 mean MAE baseline):
+# drops the calendar family (month_sin, month_cos, day_of_week).
+# Everything else matches features_combined_v1 exactly.
+
+features:
+  selected:
+    - equipment
+    - market_index_ema
+    - quote_signal_zscore
+
+training:
+  feature_cols:
+    - distance
+    - pickup_lat
+    - pickup_lon
+    - delivery_lat
+    - delivery_lon
+    - weight
+    - market_index
+    - quote_signal
+    - market_index_ema
+    - quote_signal_zscore
+    - equipment_Dry Van
+    - equipment_Flatbed
+    - equipment_Reefer

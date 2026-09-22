@@ -1,0 +1,26 @@
+# @package _global_
+# Lane-family ablation, now with native categorical handling: baseline 5
+# columns + the raw "lane" string (pickup -> delivery) passed straight to
+# the estimator as a categorical feature via FeatureConfig.categorical_cols
+# (Trainer forwards it as cat_features only when the estimator's fit
+# supports that kwarg, e.g. CatBoost). No ordinal, frequency, or target
+# encoding is applied — this is CatBoost-specific; running this preset
+# against a model without native categorical support (LightGBM, XGBoost)
+# will fail, since "lane" is a raw string column with no numeric fallback.
+# Differs from configs/experiment/baseline.yaml only in features.selected,
+# the added training.feature_cols entry, and training.categorical_cols.
+
+features:
+  selected:
+    - lane
+
+training:
+  feature_cols:
+    - distance
+    - pickup_lat
+    - pickup_lon
+    - delivery_lat
+    - delivery_lon
+    - lane
+  categorical_cols:
+    - lane

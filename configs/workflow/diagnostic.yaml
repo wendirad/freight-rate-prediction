@@ -1,0 +1,12 @@
+# Tracked final-candidate training diagnostic: generous iteration budget
+# with early stopping, per-fold train/val MAE curves logged to W&B, no
+# holdout access, no artifacts saved. hydra_entry.py maps `iterations` and
+# `eval_metric` onto the composed model family's actual param names (see
+# run_experiment.diagnostic_model_overrides) and applies
+# `early_stopping_rounds` onto config["training"] before calling
+# run_tracked_diagnostic, so this composes with any model= override, e.g.
+# `workflow=diagnostic model=lightgbm experiment=baseline`.
+name: diagnostic
+iterations: 1000
+early_stopping_rounds: 50
+eval_metric: MAE

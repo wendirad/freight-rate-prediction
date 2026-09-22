@@ -1,0 +1,23 @@
+# @package _global_
+# Loss-diagnostic preset: corrected baseline features, extended
+# n_estimators with early stopping, for run_loss_diagnostic to inspect
+# per-fold train/validation MAE curves and best iteration.
+# Requires an explicit override, e.g.:
+#   uv run python -m experiments.hydra_entry experiment=loss_diagnostic
+
+features:
+  selected: []
+
+training:
+  feature_cols:
+    - distance
+    - pickup_lat
+    - pickup_lon
+    - delivery_lat
+    - delivery_lon
+  early_stopping_rounds: 50
+
+model:
+  params:
+    n_estimators: 1000
+    metric: mae

@@ -1,0 +1,20 @@
+# @package _global_
+# market_index_ema-family ablation: baseline 5 columns + MarketIndexEMA
+# output (market_index_ema). This family depends on LaneBuilder internally
+# (build_default_feature_pipeline auto-adds it), but the raw "lane" string
+# itself is not a model input. Differs from
+# configs/experiment/baseline.yaml only in features.selected and the one
+# added training.feature_cols entry.
+
+features:
+  selected:
+    - market_index_ema
+
+training:
+  feature_cols:
+    - distance
+    - pickup_lat
+    - pickup_lon
+    - delivery_lat
+    - delivery_lon
+    - market_index_ema
