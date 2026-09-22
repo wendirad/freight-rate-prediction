@@ -34,31 +34,24 @@ submission.
 
 ## Method
 
-1. Sort observations chronologically and reserve October as the final holdout.
-2. Compare models with expanding-window cross-validation on earlier data.
-3. Refit every cleaning and feature step within each fold to prevent leakage.
-4. Compare feature families through addition and removal ablations.
-5. Select using mean MAE, fold variation, and worst-fold MAE.
-6. Evaluate October once, then refit the deployable model on all labels.
+The project uses time-aware model development rather than a random split. An
+expanding-window backtest estimates future performance while every cleaning and
+feature transformation is fitted only on the training portion of its fold.
+Model families are compared under the same folds, then feature families are
+evaluated through controlled addition and removal ablations. Mean MAE, fold
+variation, and worst-fold MAE determine the selected configuration. October is
+kept outside this process for one final temporal evaluation; afterward, the
+production model is refit on all labeled data. This procedure selected CatBoost
+with the raw shipment and market variables plus calendar and equipment features.
 
-The selected feature set contains:
-
-- distance, pickup/delivery coordinates, weight, market index, quote signal;
-- cyclical month and day-of-week features;
-- equipment indicators for Dry Van, Flatbed, and Reefer.
-
-Calendar and equipment survived the controlled ablations. Raw lane categories,
-lane market-index EMA, quote-signal z-score, and the combined freight-domain
-feature package did not improve the final comparison.
-
-## Reproduce
+## Training and Inference
 
 ### Install
 
 Requires Python 3.13+ and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-git clone https://github.com/wendirad/freight-rate-prediction.git
+git clone <repository-url>
 cd freight-rate-prediction
 uv sync
 ```
@@ -73,17 +66,20 @@ uv sync --extra all
 
 ### Prepare data
 
-The assessment data is not committed.
+The assessment data is not committed. Create `data/raw/` and place the supplied
+files there:
 
 ```bash
 mkdir -p data/raw
-wget -O /tmp/freight-rate-data.zip https://sendit.sh/Ng7A7/Archive.zip
-unzip -o /tmp/freight-rate-data.zip \
-  train-test.csv \
-  validation.csv \
-  validation-predictions-template.csv \
-  december-chart-inputs.csv \
-  -d data/raw
+```
+
+Required files:
+
+```text
+data/raw/train-test.csv
+data/raw/validation.csv
+data/raw/validation-predictions-template.csv
+data/raw/december-chart-inputs.csv
 ```
 
 ### Reproduce the selected backtest
@@ -151,28 +147,3 @@ uv run pytest -q
 uv run ruff check src tests
 uv run ruff format --check src tests
 ```
-
-## Repository structure
-
-```text
-configs/             Hydra model, feature, and workflow presets
-notebooks/           EDA notebooks and detailed findings
-src/data/            Loading, cleaning, and temporal folds
-src/features/        Leakage-safe feature engineering
-src/models/          Training and evaluation
-src/experiments/     Cross-validation, diagnostics, and tracking
-src/serving/         Artifact, submission, and web inference code
-tests/               Unit and orchestration regression tests
-score.py             Official assessment output validator
-```
-
-## Key commands
-
-| Task | Command |
-| --- | --- |
-| Install final stack | `uv sync` |
-| Install all research tools | `uv sync --extra all` |
-| Reproduce 20-fold CV | `uv run train workflow=none n_folds=20` |
-| Train final artifact | `uv run train` |
-| Generate submission | `uv run python -m serving.generate_submission` |
-| Start inference | `docker compose up --build -d` |
