@@ -46,6 +46,16 @@ kept outside this process for one final temporal evaluation; afterward, the
 production model is refit on all labeled data. This procedure selected CatBoost
 with the raw shipment and market variables plus calendar and equipment features.
 
+## Technical Report
+
+Generate the findings and methodology report with:
+
+```bash
+uv run python docs/generate_report.py
+```
+
+The generated PDF is written to `docs/report.pdf`.
+
 ## Training and Inference
 
 ### Install
@@ -113,6 +123,21 @@ The default workflow evaluates October, refits on all labeled rows, and saves
 ```bash
 uv run --extra all train tracker=wandb
 ```
+
+To train with Docker, mount the input data read-only and mount the artifact and
+Hydra output directories so the results remain on the host:
+
+```bash
+mkdir -p artifacts outputs
+docker build -t freight-rate-prediction .
+docker run --rm \
+  -v "$PWD/data/raw:/app/data/raw:ro" \
+  -v "$PWD/artifacts:/app/artifacts" \
+  -v "$PWD/outputs:/app/outputs" \
+  freight-rate-prediction uv run train
+```
+
+The trained bundle is then available at `artifacts/model.joblib` on the host.
 
 ### Generate assessment outputs
 
